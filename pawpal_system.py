@@ -6,7 +6,7 @@ all of the real logic lives in this one place.
 """
 
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, timedelta
 
 
 @dataclass
@@ -24,6 +24,28 @@ class Task:
     def mark_complete(self):
         """Mark this task as done."""
         self.completed = True
+
+    def is_recurring(self):
+        """Return True if the task repeats daily or weekly."""
+        return self.frequency in ("daily", "weekly")
+
+    def next_occurrence(self):
+        """Build the next copy of a recurring task on its next due date."""
+        if self.frequency == "daily":
+            next_date = self.due_date + timedelta(days=1)
+        elif self.frequency == "weekly":
+            next_date = self.due_date + timedelta(weeks=1)
+        else:
+            return None
+        return Task(
+            description=self.description,
+            time=self.time,
+            duration_minutes=self.duration_minutes,
+            priority=self.priority,
+            frequency=self.frequency,
+            completed=False,
+            due_date=next_date,
+        )
 
 
 @dataclass
@@ -75,6 +97,21 @@ class Scheduler:
     def __init__(self, owner):
         self.owner = owner
 
+    def sort_by_time(self):
+        """Return all of the owner's tasks ordered by their HH:MM start time."""
+        return sorted(self.owner.all_tasks(), key=lambda task: task.time)
+
+    def filter_by_status(self, completed):
+        """Return only the tasks that match a completion status (True or False)."""
+        return [task for task in self.owner.all_tasks() if task.completed == completed]
+
+    def filter_by_pet(self, pet_name):
+        """Return only the tasks that belong to one pet."""
+        pet = self.owner.get_pet(pet_name)
+        if pet is None:
+            return []
+        return list(pet.tasks)
+
     def todays_schedule(self):
         """Return today's unfinished tasks, sorted by time."""
         today = date.today()
@@ -84,3 +121,31 @@ class Scheduler:
             if not task.completed and task.due_date == today
         ]
         return sorted(todo, key=lambda task: task.time)
+
+    def mark_task_complete(self, task):
+        """Mark a task done and, if it repeats, queue up the next occurrence."""
+        task.mark_complete()
+        if task.is_recurring():
+            pet = self._find_pet_for_task(task)
+            if pet is not None:
+                pet.add_task(task.next_occurrence())
+
+    def _find_pet_for_task(self, task):
+        """Find which pet a given task belongs to."""
+        for pet in self.owner.pets:
+            if task in pet.tasks:
+                return pet
+        return None
+
+    def detect_conflicts(self):
+        """Return a warning string for any two tasks scheduled at the same time."""
+        warnings = []
+        tasks = self.sort_by_time()
+        for i in range(len(tasks)):
+            for j in range(i + 1, len(tasks)):
+                if tasks[i].time == tasks[j].time:
+                    warnings.append(
+                        f"Conflict at {tasks[i].time}: "
+                        f"'{tasks[i].description}' and '{tasks[j].description}'"
+                    )
+        return warnings
