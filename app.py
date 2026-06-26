@@ -65,13 +65,13 @@ st.subheader("Today's Schedule")
 
 if st.button("Generate schedule"):
     scheduler = Scheduler(owner)
-    todays_tasks = scheduler.todays_schedule()
+    sorted_tasks = scheduler.sort_by_time()
 
-    if not todays_tasks:
-        st.info("No tasks for today yet. Add some above.")
+    if not sorted_tasks:
+        st.info("No tasks yet. Add some above.")
     else:
         rows = []
-        for task in todays_tasks:
+        for task in sorted_tasks:
             rows.append(
                 {
                     "Time": task.time,
@@ -79,6 +79,14 @@ if st.button("Generate schedule"):
                     "Minutes": task.duration_minutes,
                     "Priority": task.priority,
                     "Frequency": task.frequency,
+                    "Done": "yes" if task.completed else "no",
                 }
             )
         st.table(rows)
+
+        conflicts = scheduler.detect_conflicts()
+        if conflicts:
+            for warning in conflicts:
+                st.warning(warning)
+        else:
+            st.success("No scheduling conflicts found.")
