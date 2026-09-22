@@ -5,7 +5,7 @@ Run with: python -m pytest
 
 from datetime import date, timedelta
 
-from pawpal_system import Owner, Pet, Task, Scheduler
+from pawpal_system import Owner, Pet, Task, Scheduler, is_valid_time
 
 
 def make_owner_with_pets():
@@ -44,6 +44,13 @@ def test_owner_all_tasks_spans_every_pet():
 def test_get_pet_returns_none_for_unknown_name():
     owner = make_owner_with_pets()
     assert owner.get_pet("Nobody") is None
+
+
+def test_is_valid_time_accepts_only_24_hour_hh_mm():
+    for good in ["00:00", "08:30", "18:00", "23:59"]:
+        assert is_valid_time(good), good
+    for bad in ["25:99", "8:00", "08:60", "24:00", "0800", "eight", "", None]:
+        assert not is_valid_time(bad), bad
 
 
 # ---------- Sorting ----------

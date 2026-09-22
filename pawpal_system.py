@@ -13,6 +13,16 @@ from datetime import date, timedelta
 PRIORITY_RANK = {"high": 0, "medium": 1, "low": 2}
 
 
+def is_valid_time(text):
+    """Return True if text is a 24-hour "HH:MM" string like "08:30" or "18:00"."""
+    if not isinstance(text, str) or len(text) != 5 or text[2] != ":":
+        return False
+    hours, minutes = text[:2], text[3:]
+    if not (hours.isdigit() and minutes.isdigit()):
+        return False
+    return 0 <= int(hours) <= 23 and 0 <= int(minutes) <= 59
+
+
 @dataclass
 class Task:
     """A single pet care task such as a walk, a feeding, or a medication."""
