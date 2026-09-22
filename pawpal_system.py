@@ -148,12 +148,18 @@ class Scheduler:
         return None
 
     def detect_conflicts(self):
-        """Return a warning string for any two tasks scheduled at the same time."""
+        """Return a warning string for any two unfinished tasks that share a day and a time.
+
+        Completed tasks are skipped, and two tasks only clash if they fall on the
+        same due_date. Without the date check, a daily task's next occurrence
+        (tomorrow at 08:00) would be flagged against today's 08:00 task.
+        """
         warnings = []
-        tasks = self.sort_by_time()
+        tasks = [task for task in self.sort_by_time() if not task.completed]
         for i in range(len(tasks)):
             for j in range(i + 1, len(tasks)):
-                if tasks[i].time == tasks[j].time:
+                same_day = tasks[i].due_date == tasks[j].due_date
+                if same_day and tasks[i].time == tasks[j].time:
                     warnings.append(
                         f"Conflict at {tasks[i].time}: "
                         f"'{tasks[i].description}' and '{tasks[j].description}'"
