@@ -3,3 +3,5 @@ __pycache__/
 .venv_new/
 .pytest_cache/
 .DS_Store
+# Saved app data (created by the Save button in app.py)
+data.json

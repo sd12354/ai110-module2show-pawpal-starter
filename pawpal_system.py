@@ -5,6 +5,7 @@ Streamlit UI in app.py and the demo script in main.py import from here, so
 all of the real logic lives in this one place.
 """
 
+import json
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 
@@ -50,6 +51,31 @@ class Task:
             due_date=next_date,
         )
 
+    def to_dict(self):
+        """Convert this task to a plain dict so it can be written as JSON."""
+        return {
+            "description": self.description,
+            "time": self.time,
+            "duration_minutes": self.duration_minutes,
+            "priority": self.priority,
+            "frequency": self.frequency,
+            "completed": self.completed,
+            "due_date": self.due_date.isoformat(),
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        """Rebuild a Task from a dict produced by to_dict()."""
+        return cls(
+            description=data["description"],
+            time=data["time"],
+            duration_minutes=data.get("duration_minutes", 30),
+            priority=data.get("priority", "medium"),
+            frequency=data.get("frequency", "once"),
+            completed=data.get("completed", False),
+            due_date=date.fromisoformat(data["due_date"]),
+        )
+
 
 @dataclass
 class Pet:
@@ -66,6 +92,22 @@ class Pet:
     def task_count(self):
         """Return how many tasks this pet has."""
         return len(self.tasks)
+
+    def to_dict(self):
+        """Convert this pet (and its tasks) to a plain dict for JSON."""
+        return {
+            "name": self.name,
+            "species": self.species,
+            "tasks": [task.to_dict() for task in self.tasks],
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        """Rebuild a Pet, including its tasks, from a dict produced by to_dict()."""
+        pet = cls(name=data["name"], species=data.get("species", "dog"))
+        for task_data in data.get("tasks", []):
+            pet.add_task(Task.from_dict(task_data))
+        return pet
 
 
 class Owner:
@@ -92,6 +134,29 @@ class Owner:
         for pet in self.pets:
             tasks.extend(pet.tasks)
         return tasks
+
+    def to_dict(self):
+        """Convert the owner and everything under them to a plain dict for JSON."""
+        return {"name": self.name, "pets": [pet.to_dict() for pet in self.pets]}
+
+    @classmethod
+    def from_dict(cls, data):
+        """Rebuild an Owner tree (owner -> pets -> tasks) from a dict."""
+        owner = cls(data["name"])
+        for pet_data in data.get("pets", []):
+            owner.add_pet(Pet.from_dict(pet_data))
+        return owner
+
+    def save_to_json(self, path="data.json"):
+        """Write this owner's pets and tasks to a JSON file."""
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(self.to_dict(), f, indent=2)
+
+    @classmethod
+    def load_from_json(cls, path="data.json"):
+        """Read an owner back from a JSON file written by save_to_json()."""
+        with open(path, "r", encoding="utf-8") as f:
+            return cls.from_dict(json.load(f))
 
 
 class Scheduler:
