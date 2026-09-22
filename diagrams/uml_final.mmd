@@ -1,0 +1,66 @@
+classDiagram
+    %% PawPal+ final architecture. Matches pawpal_system.py as implemented.
+    %% Compare with uml.mmd (the Phase 1 draft) to see what changed during the build.
+
+    class Task {
+        +str description
+        +str time
+        +int duration_minutes
+        +str priority
+        +str frequency
+        +bool completed
+        +date due_date
+        +mark_complete() void
+        +is_recurring() bool
+        +next_occurrence() Task
+        +to_dict() dict
+        +from_dict(data)$ Task
+    }
+
+    class Pet {
+        +str name
+        +str species
+        +list~Task~ tasks
+        +add_task(task) void
+        +task_count() int
+        +to_dict() dict
+        +from_dict(data)$ Pet
+    }
+
+    class Owner {
+        +str name
+        +list~Pet~ pets
+        +add_pet(pet) void
+        +get_pet(name) Pet
+        +all_tasks() list~Task~
+        +to_dict() dict
+        +from_dict(data)$ Owner
+        +save_to_json(path) void
+        +load_from_json(path)$ Owner
+    }
+
+    class Scheduler {
+        +Owner owner
+        +sort_by_time() list~Task~
+        +sort_by_priority() list~Task~
+        +filter_by_status(completed) list~Task~
+        +filter_by_pet(pet_name) list~Task~
+        +todays_schedule() list~Task~
+        +mark_task_complete(task) void
+        +detect_conflicts() list~str~
+        -_find_pet_for_task(task) Pet
+    }
+
+    class helpers {
+        <<module functions>>
+        +PRIORITY_RANK dict
+        +is_valid_time(text) bool
+    }
+
+    Owner "1" *-- "*" Pet : owns
+    Pet "1" *-- "*" Task : has
+    Scheduler "1" --> "1" Owner : reads tasks from
+    Task ..> Task : next_occurrence() creates
+    Scheduler ..> helpers : uses PRIORITY_RANK
+    Owner ..> Pet : from_dict() rebuilds
+    Pet ..> Task : from_dict() rebuilds
