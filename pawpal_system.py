@@ -124,6 +124,7 @@ class Owner:
     """A pet owner who can have several pets at once."""
 
     def __init__(self, name):
+        """Create an owner with a name and no pets yet."""
         self.name = name
         self.pets = []
 
@@ -173,6 +174,7 @@ class Scheduler:
     """The brain of PawPal+. It reads tasks from an owner and organizes them."""
 
     def __init__(self, owner):
+        """Attach the scheduler to the owner whose tasks it will organize."""
         self.owner = owner
 
     def sort_by_time(self):
