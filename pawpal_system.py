@@ -8,6 +8,9 @@ all of the real logic lives in this one place.
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 
+# Lower number = more urgent. Used by Scheduler.sort_by_priority().
+PRIORITY_RANK = {"high": 0, "medium": 1, "low": 2}
+
 
 @dataclass
 class Task:
@@ -100,6 +103,13 @@ class Scheduler:
     def sort_by_time(self):
         """Return all of the owner's tasks ordered by their HH:MM start time."""
         return sorted(self.owner.all_tasks(), key=lambda task: task.time)
+
+    def sort_by_priority(self):
+        """Return all tasks ordered high -> medium -> low, then by time within a level."""
+        return sorted(
+            self.owner.all_tasks(),
+            key=lambda task: (PRIORITY_RANK.get(task.priority, len(PRIORITY_RANK)), task.time),
+        )
 
     def filter_by_status(self, completed):
         """Return only the tasks that match a completion status (True or False)."""
